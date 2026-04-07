@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { Upload, Mic, Play, Pause, Download, Loader2, ShieldCheck, AudioLines, Copy, Check } from "lucide-react";
+import { Upload, Mic, Play, Pause, Download, Loader2, ShieldCheck, AudioLines, Copy, Check, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,12 +34,20 @@ export default function VozClonARWebsite() {
 
   const apiSnippet = `POST /api/clone-voice\nContent-Type: multipart/form-data\n\nfile: <audio>\ntext: ${text || "<text>"}\nlanguage: es-AR\nvoice_name: ${voiceName || "<name>"}`;
 
+  const ALLOWED_TYPES = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4", "audio/x-m4a", "audio/webm"];
+
   const handleAudioUpload = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (!ALLOWED_TYPES.includes(file.type) && !file.name.match(/\.(mp3|wav|ogg|m4a|webm)$/i)) {
+      setError("Unsupported file type. Please upload an .mp3, .wav, .ogg, or .m4a file.");
+      return;
+    }
+
     if (audioUrl) URL.revokeObjectURL(audioUrl);
 
+    setError("");
     const url = URL.createObjectURL(file);
     setAudioFile(file);
     setAudioUrl(url);
@@ -87,8 +95,21 @@ export default function VozClonARWebsite() {
       formData.append("language", "es-AR");
       formData.append("voice_name", voiceName);
 
-      const res = await fetch("/api/clone-voice", { method: "POST", body: formData });
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      let res;
+      try {
+        res = await fetch("/api/clone-voice", { method: "POST", body: formData });
+      } catch {
+        throw new Error("Could not reach the server. Make sure the backend is running.");
+      }
+
+      if (!res.ok) {
+        let detail = `Server error ${res.status}`;
+        try {
+          const json = await res.json();
+          if (json.detail) detail = json.detail;
+        } catch {}
+        throw new Error(detail);
+      }
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -279,9 +300,10 @@ export default function VozClonARWebsite() {
                 </Button>
 
                 {error && (
-                  <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                    {error}
-                  </p>
+                  <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{error}</span>
+                  </div>
                 )}
 
                 {(isGenerating || progress > 0) && (
