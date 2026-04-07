@@ -23,6 +23,7 @@ export default function VozClonARWebsite() {
   const [isPlayingOutput, setIsPlayingOutput] = useState(false);
   const [consentChecked, setConsentChecked] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
   const inputAudioRef = useRef(null);
   const outputAudioRef = useRef(null);
 
@@ -79,22 +80,23 @@ export default function VozClonARWebsite() {
     }, 450);
 
     try {
-      // Demo frontend behavior.
-      // Replace this with your real backend call.
-      // Example:
-      // const formData = new FormData();
-      // formData.append('file', audioFile);
-      // formData.append('text', text);
-      // formData.append('language', 'es-AR');
-      // formData.append('voice_name', voiceName);
-      // const res = await fetch('/api/clone-voice', { method: 'POST', body: formData });
-      // const blob = await res.blob();
-      // const url = URL.createObjectURL(blob);
+      setError("");
+      const formData = new FormData();
+      formData.append("file", audioFile);
+      formData.append("text", text);
+      formData.append("language", "es-AR");
+      formData.append("voice_name", voiceName);
 
-      await new Promise((resolve) => setTimeout(resolve, 3500));
-      const url = audioUrl; // Demo placeholder
+      const res = await fetch("/api/clone-voice", { method: "POST", body: formData });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       setGeneratedUrl(url);
       setProgress(100);
+    } catch (err) {
+      setError(err.message || "Something went wrong. Please try again.");
+      setProgress(0);
     } finally {
       clearInterval(interval);
       setTimeout(() => setIsGenerating(false), 250);
@@ -275,6 +277,12 @@ export default function VozClonARWebsite() {
                     </>
                   )}
                 </Button>
+
+                {error && (
+                  <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                    {error}
+                  </p>
+                )}
 
                 {(isGenerating || progress > 0) && (
                   <div className="space-y-2">

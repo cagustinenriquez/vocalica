@@ -1,4 +1,4 @@
-# Voz Clon AR Website
+# Vocalica Website
 
 This archive contains the React frontend for a voice cloning website focused on Argentinian Spanish (`es-AR`).
 
